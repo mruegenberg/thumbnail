@@ -98,6 +98,10 @@ mkThumbnail' sizeBounds = thumbnail . L.unpack
         
     strictToLazy = L.pack . BS.unpack
     
+-- | Create a thumbnail from a strict ByteString and a specific subregion of the image
+mkThumbnail'' :: ((Int,Int),(Int,Int)) -> BS.ByteString -> IO (Either String Thumbnail)
+mkThumbnail'' b = (mkThumbnail' b) . L.fromChunks . (: [])
+    
 newSize :: ((Int,Int),(Int,Int)) -> Size -> Size
 newSize ((wMin,hMin),(wMax,hMax)) (w, h) | w >= h && wMax*h`div`w > wMin = (wMax, wMax*h`div`w)
                | w >= h && h >= hMin           = (hMin*w`div`h, hMin)
