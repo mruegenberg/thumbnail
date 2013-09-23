@@ -99,11 +99,22 @@ mkThumbnail' sizeBounds = thumbnail . L.unpack
     strictToLazy = L.pack . BS.unpack
     
 newSize :: ((Int,Int),(Int,Int)) -> Size -> Size
-newSize ((wMin,hMin),(wMax,hMax)) (w, h) | w >= h && wMax*h`div`w > wMin = (wMax, wMax*h`div`w)
-               | w >= h && h >= hMin           = (hMin*w`div`h, hMin)
-               | w <  h && hMax*w`div`h > hMin = (hMax*w`div`h, hMax)
-               | w <  h && w >= wMin           = (wMin, wMin*h`div`w)
-               | otherwise = (w, h)
+newSize ((wMin,hMin),(wMax,hMax)) (w, h) =
+  let wForMaxH = hMax*w`div`h
+      hForMaxW = wMax*h`div`w
+      maximizedSize | wForMaxH <= wMax = (wForMaxH, hMax)
+                    | otherwise = (wMax, hForMaxW)
+      wForMinH = hMin*w`div`h
+      hForMinW = wMin*h`div`w
+      minimizedSize | wForMinH >= wMin = (wForMinH, wMin)
+                    | hForMinW >= hMin = (wMin, hForMinW)
+                    -- in this case, the aspect ration can't be maintained, 
+                    -- but we assume that wMin/hMin should be respected in any case. 
+                    -- Ideally, we want cropping instead, so that the image is not distorted
+                    | otherwise = (wMin,hMin) 
+  in  if fst maximizedSize > wMin && snd maximizedSize > hMin 
+      then maximizedSize 
+      else minimizedSize
 
 defaultBounds :: ((Int,Int),(Int,Int))
 defaultBounds = ((20,20),(60,60))
